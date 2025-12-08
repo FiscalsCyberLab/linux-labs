@@ -1,0 +1,338 @@
+Linux Basics Lab - Navigation and Commands
+
+Date: Dec 06, 2025
+
+Commands Practiced:
+1. pwd  - Shows the current directory
+2. ls   - Lists files and directories
+3. cd   - Changes directories
+4. mkdir - Creates a new directory
+5. touch - Creates a new file
+
+Directory structure I worked with:
+/home/kali
+/home/kali/Documents
+/home/kali/Documents/Linux-Labs
+
+Notes:
+- I learned how to navigate the Linux filesystem.
+- I created my first portfolio directory and file.
+
+------------------------------------------------------------
+
+Additional Commands Learned (Dec 06, 2025)
+
+whoami
+- Shows which user account is currently active.
+- Output on my system: kali
+
+hostname
+- Shows the system/computer name.
+- Output on my system: kali
+
+uname -a
+- Shows full system and kernel information.
+- My output:
+Linux kali 6.12.38+kali-amd64 #1 SMP PREEMPT_DYNAMIC Kali 6.12.38-kali1 (2025-08-12) x86_64 GNU/Linux
+
+Notes:
+- These commands help analysts determine user privileges, machine identity, and system-level vulnerabilities.
+
+------------------------------------------------------------
+
+Linux File Permissions (Dec 07, 2025)
+
+File inspected:
+ls -l output:
+-rw-r--r-- 1 kali kali 946 Dec 01:30 linux_basics.txt
+
+Breakdown:
+- File type: '-' (normal file)
+- Owner permissions: rw- (read, write)
+- Group permissions: rw- (read, write)
+- Others permissions: r-- (read only)
+
+Explanation:
+r = read
+w = write
+x = execute
+
+This means:
+- I (the owner) can read and edit the file.
+- Members of my group can read and edit the file.
+- Everyone else can only read it.
+
+Understanding file permissions is essential for:
+- privilege escalation
+- securing sensitive files
+- SOC investigations
+- analyzing compromised machines
+- identifying misconfigurations
+
+------------------------------------------------------------
+
+chmod Practice (Dec 07, 2025)
+
+Initial Permissions:
+-rw-rw-r--
+
+Commands Performed:
+1. chmod o-w linux_basics.txt
+- Practiced removing write permissions for others.
+
+2. chmod u+x linux_basics.txt
+- Added execute permission for the file owner.
+- Permissions became: -rwxrw-r--
+
+3. chmod 644 linux_basics.txt
+- Set permissions using octal notation.
+- Final permissions: -rw-r--r--
+- This means:
+  Owner: read/write (rw-)
+  Group: read only (r--)
+  Others: read only (r--)
+
+Understanding chmod is important for:
+- Linux hardening
+- Investigating compromised files
+- Privilege escalation analysis
+- Cloud security and server security
+- Controlling access to scripts and sensitive files
+
+------------------------------------------------------------
+
+Privilege Escalation Basics Using sudo (Dec 07, 2025)
+
+Commands Performed:
+
+1. whoami
+- Output: kali
+- Shows current user identity.
+
+2. sudo whoami
+- Output: root
+- Shows the identity when executing commands with elevated privileges.
+
+3. ls /root
+- Output: Permission denied
+- Normal users cannot access the root directory.
+
+4. sudo ls /root
+- Successfully displayed the contents of /root.
+- Demonstrates how sudo grants temporary administrative rights.
+
+Key Concepts:
+- sudo = "superuser do"
+- root user has full control over the system
+- Privilege escalation is a major topic in both hacking and defense
+- Pentesters attempt to escalate to root to gain full access
+- SOC analysts review sudo logs to detect abuse
+
+Security Relevance:
+- Unauthorized privilege escalation = full system compromise
+- Proper sudo configuration is critical in secure systems
+- Logs associated with sudo are important in investigations
+
+------------------------------------------------------------
+
+SOC Log Analysis - Sudo Events (Dec 07, 2025)
+
+Commands Used:
+sudo journalctl | grep sudo | head -n 20
+
+Example Log Entry:
+Dec 02 22:21:05 kali sudo[2544]:     kali : TTY=pts/0 ; PWD=/home/kali ; USER=root ; COMMAND=/usr/bin/nmap -sn 192.168.1.6/24
+
+Analysis:
+- Timestamp: Dec 02 22:21:05
+- User: kali (a normal user)
+- Elevated to: root
+- Terminal session: pts/0
+- Working directory: /home/kali
+- Command executed with sudo: nmap network scan
+
+What This Means:
+- The user 'kali' escalated privileges to run an nmap scan.
+- This would be normal during security testing but suspicious on a production system.
+- SOC analysts review such logs to detect:
+  * privilege escalation
+  * unauthorized scanning
+  * lateral movement
+  * misuse of sudo permissions
+
+Security Relevance:
+- Sudo logs are critical for incident response and investigations.
+- They reveal who gained root access, when they did it, and what they executed.
+- Monitoring sudo activity helps detect compromised accounts and insider threats.
+
+------------------------------------------------------------
+
+Authentication Failure Log Analysis (Dec 07, 2025)
+
+Commands Used:
+sudo journalctl | grep -i "authentication failure" | head -n 20
+
+Example Log Entry:
+Dec 03 00:55:57 kali lightdm[819]: pam_unix(lightdm:auth): authentication failure; logname= uid=0 euid=0 tty=:0 ruser= rhost=  user=kali
+
+Analysis:
+- Timestamp: Dec 03 00:55:57
+- Host: kali
+- Service: lightdm (graphical login manager)
+- Authentication module: pam_unix
+- Event: authentication failure
+- User involved: kali
+- Interpretation: The user 'kali' entered an incorrect password at the login screen.
+
+What SOC Analysts Look For:
+- Multiple failed logins in a short time window (possible brute force)
+- Failed logins from unexpected users
+- Failed logins from root account
+- Failed logins from remote IP addresses (SSH attacks)
+- Login failures followed by a successful login (possible credential stuffing)
+
+Security Relevance:
+- Authentication failures are key indicators of brute-force attempts.
+- Reviewing failed login logs helps detect compromised accounts.
+- Repeated failures from one IP may indicate an attack against SSH or system services.
+
+------------------------------------------------------------
+
+Successful Login Log Analysis (Dec 07, 2025)
+
+Commands Used:
+sudo journalctl | grep -i "session opened for user" | head -n 20
+
+Example Log Entry:
+Dec 01 01:20:10 kali lightdm[813]: pam_unix(lightdm:session): session opened for user kali(uid=1000) by kali(uid=0)
+
+Analysis:
+- Event: Successful login
+- Timestamp: Dec 01 01:20:10
+- Host: kali
+- Service: lightdm (graphical login manager)
+- User logged in: kali (uid 1000)
+- Authorized by: root (uid 0)
+- Interpretation: User 'kali' logged in to the graphical interface successfully.
+
+What SOC Analysts Look For:
+- Successful logins after multiple failed attempts (possible brute force)
+- Unexpected users logging in
+- Logins outside normal hours (anomaly detection)
+- Logins from unexpected or remote sources (SSH attacks)
+- Direct root logins (highly suspicious)
+
+Security Relevance:
+- Successful logins confirm whether authentication failures were eventually overcome.
+- Reviewing these events helps identify compromised accounts.
+- Patterns of logins can indicate internal misuse or external attacks.
+
+------------------------------------------------------------
+
+SSH Failed Login Analysis (Dec 07, 2025)
+
+Commands Used:
+sudo journalctl | grep -i "failed password" | tail -n 10
+
+Example Log Entry:
+Dec 07 22:12:53 kali sshd-session[9878]: Failed password for kali from 192.168.1.6 port 44946 ssh2
+
+Analysis:
+- Event: Failed SSH login attempt
+- Timestamp: Dec 07 22:12:53
+- Host: kali
+- Service: sshd-session (SSH daemon)
+- User targeted: kali
+- Source IP: 192.168.1.6
+- Source port: 44946
+- Protocol: SSH2
+- Interpretation: A login attempt via SSH failed due to an incorrect password.
+
+What SOC Analysts Look For:
+- Repeated failed SSH logins from the same IP (brute force attack)
+- Failed logins against privileged accounts (root, admin)
+- Attempts from unusual geographic locations
+- Sudden spike in SSH authentication failures
+- Failed logins followed by a successful login (possible credential compromise)
+
+Security Relevance:
+- SSH attacks are one of the most common external intrusion methods.
+- Tracking failed password attempts helps detect brute-force attacks.
+- Failed login patterns can indicate reconnaissance or compromised accounts.
+- SSH logs are critical during incident response and intrusion investigations.
+
+------------------------------------------------------------
+
+SSH Successful Login Analysis (Dec 07, 2025)
+
+Commands Used:
+sudo journalctl | grep -i "Accepted password" | tail -n 10
+
+Example Log Entry:
+Dec 07 22:17:49 kali sshd-session[13424]: Accepted password for kali from 192.168.1.6 port 50162 ssh2
+
+Analysis:
+- Event: Successful SSH login
+- Timestamp: Dec 07 22:17:49
+- Host: kali
+- Service: sshd-session (SSH daemon)
+- User logged in: kali
+- Source IP: 192.168.1.6
+- Source port: 50162
+- Protocol: SSH2
+- Interpretation: The 'kali' user successfully authenticated via SSH from IP 192.168.1.6.
+
+What SOC Analysts Look For:
+- Successful logins immediately after failed attempts
+- Logins from unusual or foreign IP addresses
+- Repeated successful logins at odd hours
+- Privileged accounts logging in via SSH
+- Unexpected access to production systems
+
+Security Relevance:
+- Successful SSH logins can indicate legitimate access or a compromised account.
+- Matching failed and successful logins helps detect brute-force or password-guessing attacks.
+- SSH logs are critical during intrusion investigations to track attacker activity.
+
+------------------------------------------------------------
+
+SSH Brute Force Detection & Correlation (Dec 07, 2025)
+
+Commands Used:
+1. sudo journalctl | grep sshd | grep -i "failed password"
+2. sudo journalctl | grep -i "failed password" | awk '{print $(NF-3)}' | sort | uniq -c
+3. sudo journalctl | grep sshd | grep -E "Failed password|Accepted password"
+
+Key Outputs:
+
+Failed SSH attempts:
+Dec 07 22:12:53 kali sshd-session[9878]: Failed password for kali from 192.168.1.6 port 44946 ssh2
+
+Count of failed attempts by source IP:
+1 192.168.1.6
+
+Failed + successful correlation:
+Dec 07 22:12:53 kali sshd-session[9878]: Failed password for kali from 192.168.1.6 port 44946 ssh2
+Dec 07 22:17:49 kali sshd-session[13424]: Accepted password for kali from 192.168.1.6 port 50162 ssh2
+
+Analysis:
+- IP 192.168.1.6 generated a failed SSH login attempt, followed later by a successful SSH login.
+- In this lab, both events are from my own testing on the same host.
+- In a real environment, this pattern (multiple failed attempts followed by success) can indicate:
+  * brute-force guessing that eventually succeeded
+  * password spraying or credential stuffing
+  * an attacker finally guessing or obtaining a valid password
+
+Brute-force Detection Logic (Conceptual):
+- IF failed SSH logins from the same IP > N within T minutes
+- THEN raise an alert for possible brute-force on SSH.
+
+Example (pseudo rule):
+- Condition: more than 5 "Failed password" events from the same IP in 10 minutes.
+- Optional: followed by an "Accepted password" for the same user/IP.
+
+Security Relevance:
+- SSH brute-force is a very common internet-facing attack.
+- Counting failed attempts per IP helps identify aggressive scanning and password guessing.
+- Correlating failed and successful logins is critical to spotting account compromise.
+- These techniques map directly to real SIEM queries in Splunk, Elastic, Sentinel, etc.
