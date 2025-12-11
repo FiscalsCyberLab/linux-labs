@@ -1,30 +1,24 @@
-# linux-labs
-My Linux basics and SOC analysis practice labs
 # Linux Labs – Fundamentals & SOC Analysis
 
 This repository contains my hands-on Linux and security operations (SOC) practice.
 
-## Labs Included
+## 📂 Repo structure
 
-### 1. linux_basics.txt
-Covers:
+- `linux_basics.txt` – notes and steps for Linux fundamentals labs  
+- `linux_practice/` – small exercises (permissions, processes, etc.)  
+- `bash_labs/` – Bash scripting labs (input, arguments, loops, ping sweep, etc.)
+
+## 🔍 Topics covered so far
+
 - Basic Linux navigation (`pwd`, `ls`, `cd`, `mkdir`, `touch`)
 - File permissions and `chmod`
-- `sudo` and privilege escalation basics
-- Log analysis using `journalctl`
-- Authentication failures and successful login events
-- SSH failed and successful login analysis
-- Basic brute-force detection logic using logs
+- Processes and `ps`, `kill`
+- Package management with `apt`
+- Basic Bash scripting (variables, user input, arguments, loops)
+- Simple recon tooling (ping sweep over a subnet)
 
-The goal of these labs is to build a strong foundation for:
-- SOC Analyst / Blue Team work
-- Incident response and log review
-- Future work in cloud security and penetration testing
+## 🚀 How to run the labs
 
-## How I Run These Labs
-
-Environment:
-- Kali Linux in VirtualBox
-- Git used to track progress and push labs to GitHub
-
-As I learn more (Nmap, Wireshark, processes, scripting, etc.), new lab files will be added here.
+```bash
+git clone https://github.com/FiscalsCyberLab/linux-labs.git
+cd linux-labs
